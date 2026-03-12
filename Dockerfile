@@ -26,6 +26,10 @@ RUN wget -q https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.s
 ENV PATH="$CONDA_DIR/bin:$PATH"
 RUN conda init bash && conda config --set auto_activate_base false
 
+# ── Accept Conda Terms of Service ─────────────────────────────────────────────
+RUN conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/main \
+    && conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/r
+
 # ── Env: obspy (Python 3.11) ─────────────────────────────────────────────────
 RUN conda create -n obspy python=3.11 -y \
     && conda run -n obspy pip install --no-cache-dir -q \
