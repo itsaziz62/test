@@ -1,0 +1,43 @@
+# ==========================================================================
+# Seismic Pipeline — Docker Compose
+# Run from 0_Installation/ folder:
+#   docker compose up                   (CPU only)
+#   docker compose --profile gpu up     (with NVIDIA GPU)
+# ==========================================================================
+
+services:
+  pipeline:
+    build:
+      context: ..                        # project root
+      dockerfile: 0_Installation/Dockerfile
+    container_name: seismic-pipeline
+    volumes:
+      - ../data:/app/data
+      - ../Output:/app/Output
+      - ../config:/app/config
+      - ../Model:/app/Model
+      - ../EQTransformer-master:/app/EQTransformer-master
+    stdin_open: true
+    tty: true
+
+  pipeline-gpu:
+    build:
+      context: ..
+      dockerfile: 0_Installation/Dockerfile
+    container_name: seismic-pipeline-gpu
+    profiles: ["gpu"]
+    volumes:
+      - ../data:/app/data
+      - ../Output:/app/Output
+      - ../config:/app/config
+      - ../Model:/app/Model
+      - ../EQTransformer-master:/app/EQTransformer-master
+    stdin_open: true
+    tty: true
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
