@@ -37,13 +37,38 @@ RUN conda create -n obspy python=3.11 -y \
         shapely openpyxl pyyaml lxml numexpr h5py
 
 # ── Env: eqt2 (Python 3.8 + TF 2.5 + CUDA 11.2) ────────────────────────────
-RUN conda create -n eqt2 python=3.8.15 -y \
-    && conda install -n eqt2 -c conda-forge cudatoolkit=11.2 cudnn=8.1 -y \
-    && conda run -n eqt2 pip install --no-cache-dir -q \
-        tensorflow==2.5.0 numpy==1.19.5 scipy==1.6.2 h5py==3.1.0 \
-        pillow==8.4.0 matplotlib==3.5.2 pandas==1.4.3 tqdm==4.64.0 \
-        obspy==1.3.0 eqtransformer typing-extensions==3.7.4 six==1.15.0 \
-        ipython==7.34.0 ipykernel==5.5.6 sqlalchemy==1.4.52
+# Split into steps to avoid dependency conflicts
+
+# Step 1: create env
+RUN conda create -n eqt2 python=3.8.15 -y
+
+# Step 2: CUDA via conda-forge
+RUN conda install -n eqt2 -c conda-forge cudatoolkit=11.2 cudnn=8.1 -y
+
+# Step 3: tensorflow + strictly pinned core deps
+RUN conda run -n eqt2 pip install --no-cache-dir \
+        tensorflow==2.5.0 \
+        numpy==1.19.5 \
+        scipy==1.6.2 \
+        h5py==3.1.0 \
+        typing-extensions==3.7.4 \
+        six==1.15.0
+
+# Step 4: remaining packages
+RUN conda run -n eqt2 pip install --no-cache-dir \
+        pillow==8.4.0 \
+        matplotlib==3.5.2 \
+        pandas==1.4.3 \
+        tqdm==4.64.0 \
+        ipython==7.34.0 \
+        ipykernel==5.5.6 \
+        sqlalchemy==1.4.52
+
+# Step 5: obspy (separate — has heavy deps)
+RUN conda run -n eqt2 pip install --no-cache-dir obspy==1.3.0
+
+# Step 6: eqtransformer without deps to avoid conflicts
+RUN conda run -n eqt2 pip install --no-cache-dir eqtransformer --no-deps
 
 # ── Env: foconet (Python 3.11) ───────────────────────────────────────────────
 RUN conda create -n foconet python=3.11 -y \
@@ -64,13 +89,12 @@ RUN conda create -n eqcorrscan python=3.11 -y \
 WORKDIR /app
 COPY . /app
 
-# Install EQTransformer from source if present (copied into project root)
+# Install EQTransformer from source if present
 RUN if [ -d /app/EQTransformer-master ]; then \
         conda run -n eqt2 pip install -e /app/EQTransformer-master --no-deps \
         && echo "[OK] EQTransformer installed from source"; \
     else \
-        echo "[!!] EQTransformer-master not found in build context"; \
-        echo "[!!] Copy it: cp -r ~/Documents/EQTransformer-master Automation/EQTransformer-master"; \
+        echo "[!!] EQTransformer-master not found — skipping local install"; \
     fi
 
 # ── Verify TF ────────────────────────────────────────────────────────────────
