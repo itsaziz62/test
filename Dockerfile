@@ -80,11 +80,9 @@ RUN conda create -n pyocto python=3.11 -y \
     && conda run -n pyocto pip install --no-cache-dir -q \
         pyocto pandas pyproj matplotlib
 
-# ── Env: eqcorrscan (Python 3.10 — 3.11 has pkg-resources issue) ─────────────
+# ── Env: eqcorrscan (Python 3.10, via conda-forge — avoids pkg-resources bug) ─
 RUN conda create -n eqcorrscan python=3.10 -y
-RUN conda run -n eqcorrscan pip install --no-cache-dir "setuptools<65" "pip<23"
-RUN conda run -n eqcorrscan pip install --no-cache-dir \
-        eqcorrscan obspy pandas matplotlib
+RUN conda install -n eqcorrscan -c conda-forge eqcorrscan obspy pandas matplotlib -y
 
 # ── Project files ─────────────────────────────────────────────────────────────
 WORKDIR /app
